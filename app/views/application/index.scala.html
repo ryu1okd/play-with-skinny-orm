@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type='text/javascript' src='http://codeorigin.jquery.com/jquery-1.10.2.min.js'></script>
+    <script type='text/javascript' src='@routes.Assets.at("javascripts/knockout-3.0.0.js")'></script>
+    <script>
+        $(function(){
+
+            //Model
+            var TodoModel = function(value){
+                self = this;
+                self.todo  = ko.observable(value);
+                self.check = ko.observable(false);
+            };
+
+            //ViewModel
+            var TodoViewModel = function(){
+                var self = this;
+
+                self.todoList = ko.observableArray(); //todoリスト
+                self.todoInputValue = ko.observable(''); //追加todoテキスト
+
+                //追加
+                self.addTodo = function(obj, e)
+                {
+                    if( !self.todoInputValue() )return; //空文字の場合は処理しない
+
+                    // Todoリストに追加
+                    self.todoList.unshift( new TodoModel( self.todoInputValue() ) );
+                    self.todoInputValue('');
+                };
+
+                // 削除
+                self.removeTodo = function(obj, e)
+                {
+                    // 第1引数にはModel、第2引数にはイベントが渡される
+                    //self.todoList.remove(obj);
+                    // thisもobjと同じでmodelを指してる
+                    self.todoList.remove(this);
+                };
+
+                // 一括削除
+                self.allClear = function(){
+                    if ( confirm("チェックされているデータを一括削除します。本当によろしいですか？")){
+                        // checkされているものだけ削除
+                        var removeList = self.todoList.remove(function(todo){return ko.utils.unwrapObservable(todo.check)});
+
+                        // 削除件数が返ってくる
+                        if (removeList.length <= 0){
+                            alert("削除対象が選択されていません。");
+                        }
+                    }
+                };
+
+                // なくても良い。アニメーションとか付ける場合
+                self.todoFadeIn = function(element, index, data){
+                    // 他のnodeTypeでも動作するので「要素」のみ対象にする
+                    if (element.nodeType === 1) {
+                        $(element).hide().fadeIn(1500);
+                    }
+                };
+
+                self.todoFadeOut = function(element, index, data){
+                    if (element.nodeType === 1) {
+                        $target = $(element);
+                        $target.fadeOut(1500).queue(function() {
+                            $target.remove();
+                        });
+                    }
+                };
+            };
+
+            ko.applyBindings( new TodoViewModel() );
+        });
+    </script>
+
+</head>
+    <title></title>
+</head>
+<body>
+    <p>
+        <input type="text" value="" placeholder="TODOを入力" data-bind="value: todoInputValue"> <button data-bind="click: addTodo">追加</button> <button data-bind="click: allClear">チェックしている項目を一括削除</button>
+    </p>
+
+    <!-- template を使用しないとbeforeRemove等のイベントが発生しない-->
+    <ul data-bind="template: {foreach: todoList, visible: todoList().length>0, afterAdd: todoFadeIn, beforeRemove: todoFadeOut}">
+        <li>
+            <input type="checkbox" data-bind="checked: check">
+            <span data-bind="text: todo">Todo</span>
+            <button data-bind="visible: $data.check, click: $root.removeTodo">削除</button>
+        </li>
+    </ul>
+</body>
+</html>
